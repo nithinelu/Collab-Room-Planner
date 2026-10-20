@@ -14,16 +14,22 @@
   <header class="top">
     <div>
       <h1>Collab Room Planner</h1>
-      <p>Lay out a meeting room, drop in a Cisco, Logitech, MAXHUB or Huawei device, and check camera coverage, mic pickup and display size per seat, in plan or in 3D.</p>
+      <p>Lay out a meeting room, drop in a Cisco, Logitech, Neat, MAXHUB or Huawei device, and check camera coverage, mic pickup and display size per seat, in plan or in 3D.</p>
     </div>
     <div class="actions">
       <button class="btn ghost" id="openProj" title="Ctrl+O">Open…</button>
       <button class="btn ghost" id="importVrc" title="Import a Video Room Calculator .vrc.json (Ctrl+I)">Import VRC…</button>
       <button class="btn ghost" id="saveProj" title="Ctrl+S">Save…</button>
       <button class="btn" id="exportXlsx" title="Ctrl+E">Export BOQ to Excel</button>
+      <button class="btn ghost" id="checkBadge" hidden title="Vendor product check (runs every start)">Checking vendor products…</button>
       <span class="status" id="appStatus" role="status"></span>
     </div>
   </header>
+
+  <details class="sheet" id="checkPanel" hidden>
+    <summary><h2>Vendor product check</h2></summary>
+    <div id="checkBody"></div>
+  </details>
 
   <section class="sheet" aria-labelledby="room-h">
     <h2 id="room-h">Room</h2>
@@ -59,6 +65,7 @@
     <div class="fields">
       <div class="field"><label class="label" for="mount-bottom">Display bottom edge AFF (m)</label><input id="mount-bottom" data-grp="mount" data-key="bottom" type="number" min="0.5" max="3" step="0.05"></div>
       <div class="field"><label class="label" for="mount-bar">Video bar position</label><select id="mount-bar" data-grp="mount" data-key="bar"><option value="above">Above the display</option><option value="below">Below the display</option></select></div>
+      <div class="field"><label class="label" for="mount-walls">Wall finish (side &amp; rear walls)</label><select id="mount-walls" data-grp="mount" data-key="walls"><option value="white">White</option><option value="wood">Wood</option></select></div>
       <div class="field"><label class="label" for="mount-wallH">Wall camera height (m)</label><input id="mount-wallH" data-grp="mount" data-key="wallH" type="number" min="1" max="5" step="0.05"></div>
       <div class="field"><label class="label" for="mount-cornerH">Corner camera height (m)</label><input id="mount-cornerH" data-grp="mount" data-key="cornerH" type="number" min="1" max="5" step="0.05"></div>
       <div class="field"><label class="label" for="mount-sideY">Side cameras from display wall (m, 0 = auto)</label><input id="mount-sideY" data-grp="mount" data-key="sideY" type="number" min="0" max="30" step="0.1"></div>
@@ -103,6 +110,7 @@
 <script src="audio.js"></script>
 <script src="install.js"></script>
 <script src="vrc.js"></script>
+<script src="productcheck.js"></script>
 <script type="module" src="view3d.js"></script>
 </body>
 </html>

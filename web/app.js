@@ -1,5 +1,7 @@
 /* Collab Room Planner: catalog, room layout, coverage analysis, 2D plan, BOQ and app glue.
    The 3D view lives in view3d.js and registers itself as window.View3D. */
+const huawei=(model,size,o)=>({v:"Huawei",id:`huawei-${model.toLowerCase().replace(/\s+/g,"")}-${size}`,name:`IdeaHub ${model} ${size}"`,
+  pan:0,board:size,kit:[`HUAWEI IdeaHub ${model} ${size}" (${o.note})`],addon:{name:"Huawei expansion mic (confirm model)",r:3,max:2,incl:0},...o});
 const CATALOG = [
   // vendor, id, name, hfov, pan(± deg), reach(m), mic(m), cap, board(0=bar), addon, src
   {v:"Cisco",id:"cisco-bar",name:"Room Bar",hfov:120,pan:0,reach:4.5,mic:4,cap:6,board:0,
@@ -8,11 +10,12 @@ const CATALOG = [
   {v:"Cisco",id:"cisco-barpro",name:"Room Bar Pro",hfov:112,pan:0,reach:6,mic:4,cap:12,board:0,
    kit:["Cisco Room Bar Pro (CS-BARPRO-K9), incl. Room Navigator for Table"],addon:{name:"Cisco Table Microphone Pro",r:2.5,max:8,incl:0},
    src:{hfov:1,reach:0,mic:1}},
-  {v:"Cisco",id:"cisco-board55",name:"Board Pro 55 G2",hfov:120,pan:0,reach:4,mic:4,cap:6,board:55,
-   kit:["Cisco Board Pro 55 G2","Cisco Room Navigator (table or wall)"],addon:{name:"Cisco Table Microphone Pro",r:2.5,max:2,incl:0},
+  // Board Pro G3 (replaced G2 on webex.com, Oct 2026): 112° wide + 70° tele lens, 14-mic array optimised to 4 m, up to 8 IP mics
+  {v:"Cisco",id:"cisco-board55",name:"Board Pro 55 G3",hfov:112,pan:0,reach:5,mic:4,cap:8,board:55,
+   kit:["Cisco Board Pro 55 G3","Cisco Room Navigator (table or wall)"],addon:{name:"Cisco Table Microphone Pro",r:2.5,max:8,incl:0},
    src:{hfov:0,reach:0,mic:0}},
-  {v:"Cisco",id:"cisco-board75",name:"Board Pro 75 G2",hfov:120,pan:0,reach:5.5,mic:4,cap:10,board:75,
-   kit:["Cisco Board Pro 75 G2","Cisco Room Navigator (table or wall)"],addon:{name:"Cisco Table Microphone Pro",r:2.5,max:4,incl:0},
+  {v:"Cisco",id:"cisco-board75",name:"Board Pro 75 G3",hfov:112,pan:0,reach:6.5,mic:4,cap:12,board:75,
+   kit:["Cisco Board Pro 75 G3","Cisco Room Navigator (table or wall)"],addon:{name:"Cisco Table Microphone Pro",r:2.5,max:8,incl:0},
    src:{hfov:0,reach:0,mic:0}},
   {v:"Cisco",id:"cisco-eq",name:"Room Kit EQ + Quad Camera",hfov:83,pan:0,reach:8,mic:0,cap:22,board:0,addonRows:{name:"Cisco Ceiling Microphone Pro",r:4,max:8,incl:0,ceil:1},codec:1,
    kit:["Cisco Room Kit EQ with Quad Camera","Cisco Room Navigator (table or wall)"],addon:{name:"Cisco Table Microphone Pro",r:2.5,max:8,incl:0},
@@ -35,6 +38,9 @@ const CATALOG = [
   {v:"Logitech",id:"logi-mini",name:"Rally Bar Mini",hfov:113,pan:25,reach:5,mic:4.5,cap:12,board:0,
    kit:["Logitech Rally Bar Mini","Logitech Tap IP"],addon:{name:"Logitech Rally Mic Pod",r:2.5,max:3,incl:0},
    src:{hfov:1,pan:1,reach:0,mic:1}},
+  {v:"Logitech",id:"logi-bar2",name:"Rally Bar 2",hfov:103,pan:0,reach:7,mic:4.5,cap:14,board:0,
+   kit:["Logitech Rally Bar 2 (960-001804)","Logitech Tap IP"],addon:{name:"Logitech Rally Mic Pod 2 (via Logitech Link)",r:2.5,max:3,incl:0},
+   src:{hfov:1,reach:0,mic:0}},
   {v:"Logitech",id:"logi-bar",name:"Rally Bar",hfov:82.1,pan:25,reach:7,mic:4.5,cap:12,board:0,
    kit:["Logitech Rally Bar","Logitech Tap IP"],addon:{name:"Logitech Rally Mic Pod",r:2.5,max:3,incl:0},
    src:{hfov:0,pan:0,reach:0,mic:0}},
@@ -45,6 +51,9 @@ const CATALOG = [
   {v:"MAXHUB",id:"maxhub-u50",name:"XBar U50",hfov:125,pan:0,reach:6,mic:8,cap:10,board:0,
    kit:["MAXHUB XBar U50 video bar","Room controller or BYOD (confirm platform)"],addon:{name:"MAXHUB expansion mic (confirm model)",r:3,max:2,incl:0},
    src:{hfov:1,reach:0,mic:1}},
+  {v:"MAXHUB",id:"maxhub-v70",name:"XBar V70",hfov:125,pan:0,reach:8,mic:10,cap:16,board:0,
+   kit:["MAXHUB XBar V70 Kit (MDEP Android, 200MP Quad Sight camera; confirm console in kit)"],addon:{name:"MAXHUB expansion mic (confirm model)",r:3,max:2,incl:0},
+   src:{hfov:1,reach:0,mic:1}},
   {v:"MAXHUB",id:"maxhub-v50",name:"XBar V50",hfov:125,pan:0,reach:7,mic:8,cap:12,board:0,
    kit:["MAXHUB XBar V50 Kit (MTR on Android, incl. touch console)"],addon:{name:"MAXHUB expansion mic (confirm model)",r:3,max:2,incl:0},
    src:{hfov:1,reach:0,mic:1}},
@@ -52,12 +61,12 @@ const CATALOG = [
    kit:["MAXHUB XBar W70 Kit (MTR on Windows, incl. touch console)"],addon:{name:"MAXHUB expansion mic (confirm model)",r:3,max:2,incl:0},
    src:{hfov:1,reach:0,mic:1}},
 
-  {v:"Huawei",id:"huawei-65",name:"IdeaHub Board 2 65\"",hfov:80,pan:0,reach:6,mic:10,cap:10,board:65,
-   kit:["HUAWEI IdeaHub Board 2 65\" (camera, mics, speakers built in)"],addon:{name:"Huawei expansion mic (confirm model)",r:3,max:2,incl:0},
-   src:{hfov:1,reach:0,mic:1}},
-  {v:"Huawei",id:"huawei-86",name:"IdeaHub Board 2 86\"",hfov:80,pan:0,reach:7,mic:12,cap:14,board:86,
-   kit:["HUAWEI IdeaHub Board 2 86\" (camera, mics, speakers built in)"],addon:{name:"Huawei expansion mic (confirm model)",r:3,max:2,incl:0},
-   src:{hfov:0,reach:0,mic:1}},
+  // Huawei IdeaHub range as listed on e.huawei.com/en (ES3, ES2 Plus, ES2, S2, B3); sizes per Huawei's decoration guide.
+  ...[65,75,86].map(s=>huawei("ES3",s,{hfov:90,reach:8,mic:15,cap:{65:10,75:14,86:18}[s],note:"4K dual-lens camera with 5x zoom, 24 mics, speakers built in",src:{hfov:0,reach:0,mic:1}})),
+  huawei("ES2 Plus",86,{hfov:80,reach:6,mic:12,cap:16,note:"4K camera, 12-mic array, speakers built in",src:{hfov:0,reach:0,mic:1}}),
+  ...[65,75,86].map(s=>huawei("ES2",s,{hfov:80,reach:6,mic:12,cap:{65:8,75:12,86:14}[s],note:"4K camera, mics, speakers built in",src:{hfov:0,reach:0,mic:1}})),
+  ...[65,75,86].map(s=>huawei("S2",s,{hfov:80,reach:6,mic:12,cap:{65:8,75:12,86:14}[s],note:"4K camera, mics, speakers built in",src:{hfov:1,reach:0,mic:1}})),
+  ...[65,75,86].map(s=>huawei("B3",s,{hfov:80,reach:5,mic:10,cap:{65:8,75:10,86:12}[s],note:"4K camera, mics, speakers built in",src:{hfov:0,reach:0,mic:1}})),
 
   {v:"Neat",id:"neat-bar2",name:"Bar Gen 2",hfov:113,pan:0,reach:5,mic:5,cap:8,board:0,
    kit:["Neat Bar Gen 2","Neat Pad (controller)"],addon:{name:"—",r:0,max:0,incl:0},
@@ -83,7 +92,7 @@ const EXT_CAMS=[
   {id:"logi-sight",name:"Logitech Sight (table camera)",hfov:360,pan:0,reach:3.5,mic:2.5,for:["logi-bar","logi-mini","logi-plus"],src:{hfov:0,reach:0}},
   {id:"neat-center",name:"Neat Center (360° table camera + mics)",hfov:360,pan:0,reach:5,mic:5,for:["neat-barpro","neat-boardpro"],src:{hfov:1,reach:1}},
   {id:"generic-ptz",name:"Extension PTZ camera (confirm model)",hfov:70,pan:100,track:1,reach:10,mic:0,
-   for:["maxhub-u50","maxhub-v50","maxhub-w70","huawei-65","huawei-86"],src:{hfov:0,reach:0}},
+   for:CATALOG.filter(d=>/^(maxhub|huawei)-/.test(d.id)).map(d=>d.id),src:{hfov:0,reach:0}},
 ];
 const XVIEW=["cisco-eq","cisco-eqx","cisco-pro"]; // Cisco cross-view: Room Kit EQ / EQX + two Room Vision PTZ on the side walls
 const POSITIONS={custom:"Imported position",above:"Above the screen (front wall)",left:"Left side wall",right:"Right side wall",
@@ -111,7 +120,7 @@ CATALOG.forEach(d=>resetSpecs(d.id));
 
 const DEFAULTS={name:"",preset:"medium",layout:"board",W:4.5,D:6,H:2.8,seats:10,tw:1.2,gap:1.5,plan:80,compare:true,dual:false,sync:false,
   dev:["cisco-barpro","maxhub-v50"],view:["3d","3d"],specs:{},ext:[[],[]],
-  mount:{bottom:0.9,bar:"above",wallH:1.9,cornerH:2.1,sideY:0},
+  mount:{bottom:0.9,bar:"above",wallH:1.9,cornerH:2.1,sideY:0,walls:"white"},
   cab:{rack:"credenza",route:"ceiling",floorBox:true,uplink:15,slack:10,loop:0.5,show:true},
   audio:[{spk:"none",spkN:0,mic:"device",micN:0,dsp:"auto"},{spk:"none",spkN:0,mic:"device",micN:0,dsp:"auto"}]};
 let S=JSON.parse(JSON.stringify(DEFAULTS));
@@ -145,7 +154,9 @@ async function loadSaved(){
 }
 function applyState(s){
   S=Object.assign(JSON.parse(JSON.stringify(DEFAULTS)),s||{});
-  S.dev=S.dev.map((id,i)=>byId(id)?id:DEFAULTS.dev[i]);
+  const RENAMED={"huawei-65":"huawei-es3-65","huawei-86":"huawei-es3-86"}; // old placeholder Huawei ids
+  if(s&&Array.isArray(s.audio)) s.audio.forEach(a=>{if(a&&a.mic==="shure-mxa920") a.mic="shure-mxa925";}); // MXA920 -> successor
+  S.dev=S.dev.map((id,i)=>byId(RENAMED[id]||id)?(RENAMED[id]||id):DEFAULTS.dev[i]);
   if(!Array.isArray(S.view)||S.view.length<2) S.view=["3d","3d"];
   if(!LAYOUTS[S.layout]||(S.layout==="vrc"&&!(S.vrc&&S.vrc.seats))) S.layout="board";
   S.mount=Object.assign({},DEFAULTS.mount,(s&&s.mount)||{});
@@ -297,15 +308,20 @@ function svgPlan(d,L,A,col){
   const {W,D}=S, m=0.7, fs=Math.max(W,D)*0.03, cid="clip"+col;
   const sw='vector-effect="non-scaling-stroke"';
   let g=`<svg viewBox="${-m} ${-m} ${W+2*m} ${D+2*m}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Floor plan for ${esc(d.v+" "+d.name)}">`;
-  g+=`<defs><clipPath id="${cid}"><rect x="0" y="0" width="${W}" height="${D}"/></clipPath></defs>`;
+  const wt=0.14; // drawn wall thickness
+  g+=`<defs><clipPath id="${cid}"><rect x="0" y="0" width="${W}" height="${D}"/></clipPath>
+    <pattern id="hatch${col}" patternUnits="userSpaceOnUse" width="0.12" height="0.12" patternTransform="rotate(45)"><rect width="0.12" height="0.12" fill="${S.mount.walls==="wood"?"#b0805a":"#f3f1ec"}"/><line x1="0" y1="0" x2="0" y2="0.12" stroke="${S.mount.walls==="wood"?"#8a5f3d":"#d6d1c8"}" stroke-width="0.03"/></pattern>
+    <pattern id="slat${col}" patternUnits="userSpaceOnUse" width="0.09" height="0.2"><rect width="0.09" height="0.2" fill="#2a2522"/><rect x="0.015" width="0.06" height="0.2" fill="var(--disp)" opacity=".85"/></pattern></defs>`;
+  g+=`<rect x="${-wt}" y="${-wt}" width="${W+2*wt}" height="${D+2*wt}" rx="0.03" fill="url(#hatch${col})"/>`;
+  if(!L.main) g+=`<rect x="0" y="${-wt}" width="${W}" height="${wt}" fill="url(#slat${col})"/>`;
   g+=`<rect x="0" y="0" width="${W}" height="${D}" fill="var(--sheet)"/>`;
   for(let x=1;x<W;x++) g+=`<line x1="${x}" y1="0" x2="${x}" y2="${D}" stroke="var(--grid)" stroke-width="1" ${sw}/>`;
   for(let y=1;y<D;y++) g+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(--grid)" stroke-width="1" ${sw}/>`;
   g+=`<g clip-path="url(#${cid})">`;
   const sp=A.sp;
   const MC=A.cams[0];
-  if(sp.pan>0) g+=`<path d="${wedge(MC.x,A.cy,sp.reach,sp.hfov/2+sp.pan,MC.aim)}" fill="var(--accent)" fill-opacity=".07" stroke="var(--accent)" stroke-opacity=".4" stroke-dasharray="4 4" stroke-width="1" ${sw}/>`;
-  g+=`<path d="${wedge(MC.x,A.cy,sp.reach,sp.hfov/2,MC.aim)}" fill="var(--accent)" fill-opacity=".16" stroke="var(--accent)" stroke-width="1.5" ${sw}/>`;
+  if(sp.pan>0) g+=`<path d="${wedge(MC.x,A.cy,sp.reach,sp.hfov/2+sp.pan,MC.aim)}" fill="var(--cam)" fill-opacity=".07" stroke="var(--cam)" stroke-opacity=".4" stroke-dasharray="4 4" stroke-width="1" ${sw}/>`;
+  g+=`<path d="${wedge(MC.x,A.cy,sp.reach,sp.hfov/2,MC.aim)}" fill="var(--cam)" fill-opacity=".14" stroke="var(--cam)" stroke-width="1.5" ${sw}/>`;
   if(sp.mic>0){
     g+=`<circle cx="${MC.x}" cy="${A.cy}" r="${sp.mic}" fill="none" stroke="var(--mic)" stroke-opacity=".55" stroke-dasharray="2 4" stroke-width="1.2" ${sw}/>`;
     g+=`<circle cx="${MC.x}" cy="${A.cy}" r="${A.micPlan}" fill="var(--mic)" fill-opacity=".09" stroke="var(--mic)" stroke-width="1.4" ${sw}/>`;
@@ -328,7 +344,7 @@ function svgPlan(d,L,A,col){
   L.desks.forEach(k=>{g+=`<rect x="${k.x0}" y="${k.y-k.dep/2}" width="${k.x1-k.x0}" height="${k.dep}" fill="var(--table)" stroke="var(--muted)" stroke-width="1" ${sw}/>`;});
   if(L.lectern) g+=`<rect x="${L.lectern.x-0.3}" y="${L.lectern.y-0.2}" width="0.6" height="0.4" fill="var(--table)" stroke="var(--ink)" stroke-width="1" ${sw}/>`;
   if(A.I&&S.cab.show) A.I.runs.forEach(r=>{if(!r.pts) return;
-    g+=`<polyline points="${r.pts.map(p=>p[0]+","+p[1]).join(" ")}" fill="none" stroke="var(--${r.type==="HDMI"?"hdmi":r.type==="CAT6"?"cat6":r.type==="Speaker"?"spk":"muted"})" stroke-opacity=".7" stroke-dasharray="3 2" stroke-width="1.2" ${sw}/>`;});
+    g+=`<polyline points="${r.pts.map(p=>p[0]+","+p[1]).join(" ")}" fill="none" stroke="var(--${r.type==="HDMI"?"hdmi":r.type==="CAT6"?"cat6":r.type==="Speaker"?"spk":"muted"})" stroke-opacity=".8" stroke-dasharray="${r.type==="HDMI"?"6 3":r.type==="CAT6"?"1 3":"2 2"}" stroke-width="1.2" ${sw}/>`;});
   if(A.I){const k=A.I.rack; g+=`<rect x="${k[0]-0.2}" y="${k[1]-0.2}" width="0.4" height="0.4" fill="none" stroke="var(--cat6)" stroke-width="1.5" ${sw}/><text x="${k[0]}" y="${k[1]+fs*0.3}" text-anchor="middle" font-size="${fs*0.7}" font-family="Consolas,monospace" fill="var(--cat6)">RACK</text>`;}
   A.mics.forEach(mc=>{g+=`<circle cx="${mc.x}" cy="${mc.y}" r="${fs*0.35}" fill="var(--mic)"/>`});
   if(A.au&&A.au.spk) A.au.spk.pts.forEach(p=>{g+=`<circle cx="${p.x}" cy="${p.y}" r="0.16" fill="var(--sheet)" stroke="var(--spk)" stroke-width="2" ${sw}/><text x="${p.x}" y="${p.y+fs*0.3}" text-anchor="middle" font-size="${fs*0.75}" font-weight="700" font-family="Consolas,monospace" fill="var(--spk)">S</text>`;});
@@ -343,8 +359,9 @@ function svgPlan(d,L,A,col){
     g+=`<text x="${lx}" y="${ly}" text-anchor="middle" font-size="${fs*0.8}" font-family="Consolas,monospace" font-weight="600" fill="var(--cam2)">C${i+2}</text>`;
   });
   const bw = (d.board ? d.board*0.0254*0.8716 : 0.9)*(d.dualBoard?2:1);
-  if(L.main) g+=`<g transform="translate(${L.main.x} ${L.main.y}) rotate(${-L.main.aim})"><rect x="${-bw/2}" y="-0.065" width="${bw}" height="0.13" fill="var(--ink)"/></g>`;
-  else g+=`<rect x="${L.cx-bw/2}" y="-0.05" width="${bw}" height="0.13" fill="var(--ink)"/>`;
+  const DP=L.main?{x:L.main.x,y:L.main.y,aim:L.main.aim}:{x:L.cx,y:0.02,aim:0}, vz=A.I?6*A.I.geo.dh:0;
+  if(vz) g+=`<g clip-path="url(#${cid})"><path d="${wedge(DP.x,DP.y,vz,60,DP.aim)}" fill="var(--disp)" fill-opacity=".04" stroke="var(--disp)" stroke-dasharray="7 4" stroke-width="1.3" ${sw}/></g>`;
+  g+=`<g transform="translate(${DP.x} ${DP.y}) rotate(${-DP.aim})"><rect x="${-bw/2}" y="${L.main?-0.065:-0.07}" width="${bw}" height="0.13" fill="var(--disp)"/></g>`;
   g+=`<text x="${W/2}" y="${-m*0.45}" text-anchor="middle" font-size="${fs}" font-family="Consolas,monospace" fill="var(--muted)">${fmt(W)} m${L.main?"":" · display wall"}</text>`;
   g+=`<text transform="translate(${-m*0.45} ${D/2}) rotate(-90)" text-anchor="middle" font-size="${fs}" font-family="Consolas,monospace" fill="var(--muted)">${fmt(D)} m</text>`;
   g+=`<text x="${W}" y="${D+m*0.6}" text-anchor="end" font-size="${fs*0.85}" font-family="Consolas,monospace" fill="var(--muted)">grid 1 m</text>`;
@@ -354,7 +371,7 @@ function svgPlan(d,L,A,col){
 /* ---------- UI ---------- */
 function deviceOptions(sel){
   let h="";VENDORS.forEach(v=>{
-    h+=`<optgroup label="${v}">`+CATALOG.filter(d=>d.v===v).map(d=>`<option value="${d.id}"${d.id===sel?" selected":""}>${esc(d.v+" "+d.name)}</option>`).join("")+`</optgroup>`;
+    h+=`<optgroup label="${v}">`+CATALOG.filter(d=>d.v===v).map(d=>`<option value="${d.id}"${d.id===sel?" selected":""}>${esc(d.v+" "+d.name)}${typeof pcFlag==="function"?pcFlag(d.id):""}</option>`).join("")+`</optgroup>`;
   });return h;
 }
 function srcTag(d,k){
@@ -374,7 +391,7 @@ function buildPlans(){
           <button data-v="2d" aria-pressed="${v==="2d"}">2D plan</button>
         </div>
       </div>
-      <div class="field"><label class="label" for="dev${c}">Device</label><select id="dev${c}">${deviceOptions(d.id)}</select></div>
+      <div class="field"><label class="label" for="dev${c}">Device</label><select id="dev${c}">${deviceOptions(d.id)}</select><div class="pcnote" id="pc${c}"></div></div>
       <div class="specs">
         ${SPEC_KEYS.map(k=>`<div class="field"><label class="label" for="${k}${c}">${{hfov:"HFOV °",reach:"Cam reach m",mic:"Mic pickup m"}[k]}</label>
           <input id="${k}${c}" type="number" step="${k==="hfov"?1:0.5}" min="${k==="hfov"?30:k==="mic"?0:1}" max="${k==="hfov"?180:15}" value="${sp[k]}"><span id="src${k}${c}">${srcTag(d,k)}</span></div>`).join("")}
@@ -399,10 +416,13 @@ function buildPlans(){
         <span><i class="sw" style="background:var(--ok)"></i>Seen and heard</span>
         <span><i class="sw" style="background:var(--warn)"></i>Marginal</span>
         <span><i class="sw" style="background:var(--bad)"></i>Not covered</span>
-        <span><i class="sw" style="background:var(--accent);opacity:.5"></i>Camera</span>
-        <span><i class="sw" style="background:var(--cam2);opacity:.6"></i>Extra camera</span>
-        <span><i class="sw" style="background:var(--mic);opacity:.6"></i>Mic</span>
-        <span><i class="sw" style="background:var(--spk);opacity:.7"></i>Speaker</span>
+        <span><i class="sq" style="background:var(--cam)"></i>Camera</span>
+        <span><i class="sq" style="background:var(--cam2)"></i>Extra camera</span>
+        <span><i class="sq" style="background:var(--mic)"></i>Mic pickup</span>
+        <span><i class="sq" style="background:var(--spk)"></i>Speaker</span>
+        <span><i class="sq" style="background:var(--disp)"></i>Display · viewing zone (6×)</span>
+        <span style="color:var(--cat6)"><i class="ln" style="border-top-style:dotted"></i>CAT6</span>
+        <span style="color:var(--hdmi)"><i class="ln"></i>HDMI</span>
       </div>`;
     box.appendChild(el);
     el.querySelector(".seg").addEventListener("click",e=>{
@@ -527,6 +547,7 @@ function render(){
     const notes=noteList(d,L,A);
     $("note"+c).innerHTML=notes.map(t=>`<li>${esc(t)}</li>`).join("");
     boq.appendChild(boqBlock(d,A,c));
+    if(typeof pcNote==="function") pcNote(c);
     if(A.I){const el=document.createElement("div"); el.innerHTML=installHtml(A.I,d,c); $("inst").appendChild(el);}
     markCam(c);
   }
@@ -697,6 +718,8 @@ function wire(){
   $("saveProj").addEventListener("click",saveProject);
   $("openProj").addEventListener("click",openProject);
   $("importVrc").addEventListener("click",()=>importVrc()); // vrc.js loads after app.js
+  $("checkBadge").addEventListener("click",()=>{const p=$("checkPanel"); p.hidden=false; p.open=true; p.scrollIntoView({behavior:"smooth"});});
+  $("checkPanel").addEventListener("click",e=>{const b=e.target.closest("[data-url]"); if(b&&Host.api) Host.api.open_url(b.dataset.url);});
   document.addEventListener("keydown",e=>{
     if(!e.ctrlKey) return;
     const k=e.key.toLowerCase();
@@ -716,5 +739,6 @@ window.onView3DReady=()=>{if(window.__started){window.View3D.setSync(S.sync);ren
   applyState(await loadSaved());
   syncInputs(); buildPlans(); render();
   window.__started=true;
+  if(typeof startProductCheck==="function") startProductCheck(); // productcheck.js loads after app.js
   if(window.View3D){window.View3D.setSync(S.sync);render();}
 })();

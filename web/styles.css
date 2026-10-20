@@ -1,8 +1,8 @@
 /* Drafting-table planner. Controls strip on top, one or two room sheets side by side, BOQ sheet below. */
 :root{
   --bg:#eef1ef; --sheet:#ffffff; --ink:#17201d; --muted:#5d6b66; --rule:#cfd8d4; --grid:#e3e9e6;
-  --table:#dfe5e2; --accent:#1d6a86; --mic:#b0621f; --ok:#2f8a4f; --warn:#c38a12; --bad:#c2412f;
-  --chip:#e2e8e5; --focus:#1d6a86; --cam2:#7a4fb5; --cat6:#1f7f8c; --hdmi:#c0392b; --spk:#2e7d32;
+  --table:#dfe5e2; --accent:#1d6a86; --mic:#c8178f; --ok:#2f8a4f; --warn:#c38a12; --bad:#c2412f;
+  --chip:#e2e8e5; --focus:#1d6a86; --cam:#1e66f5; --cam2:#8839ef; --spk:#0597a7; --disp:#7a4a22; --wall:#d9d2c6; --wallLine:#b8ad9c; --cat6:#6b7280; --hdmi:#1f2937;
   --f-display:"Bahnschrift SemiCondensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"Segoe UI",system-ui,-apple-system,sans-serif;
   --f-mono:"Cascadia Mono",Consolas,ui-monospace,monospace;
@@ -10,12 +10,12 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#121816; --sheet:#1a2220; --ink:#e4ebe8; --muted:#94a39d; --rule:#2f3b37; --grid:#232d2a;
-  --table:#2b3633; --accent:#5ab4d6; --mic:#e08c45; --ok:#55b878; --warn:#e2b23d; --bad:#e86a55;
-  --chip:#26302d; --focus:#5ab4d6; --cam2:#b591ef; --cat6:#4fc3d1; --hdmi:#ff7a6b; --spk:#7bd389; color-scheme:dark}}
+  --table:#2b3633; --accent:#5ab4d6; --mic:#ff6fc4; --ok:#55b878; --warn:#e2b23d; --bad:#e86a55;
+  --chip:#26302d; --focus:#5ab4d6; --cam:#6ea8ff; --cam2:#c4a0ff; --spk:#3fd0dd; --disp:#e0a66b; --wall:#3a3f3d; --wallLine:#555c59; --cat6:#9aa3b2; --hdmi:#e5e7eb; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#121816; --sheet:#1a2220; --ink:#e4ebe8; --muted:#94a39d; --rule:#2f3b37; --grid:#232d2a;
-  --table:#2b3633; --accent:#5ab4d6; --mic:#e08c45; --ok:#55b878; --warn:#e2b23d; --bad:#e86a55;
-  --chip:#26302d; --focus:#5ab4d6; --cam2:#b591ef; --cat6:#4fc3d1; --hdmi:#ff7a6b; --spk:#7bd389; color-scheme:dark}
+  --table:#2b3633; --accent:#5ab4d6; --mic:#ff6fc4; --ok:#55b878; --warn:#e2b23d; --bad:#e86a55;
+  --chip:#26302d; --focus:#5ab4d6; --cam:#6ea8ff; --cam2:#c4a0ff; --spk:#3fd0dd; --disp:#e0a66b; --wall:#3a3f3d; --wallLine:#555c59; --cat6:#9aa3b2; --hdmi:#e5e7eb; color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;padding:18px 16px 40px}
 .wrap{max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
@@ -110,3 +110,9 @@ p.n{color:var(--muted);font-size:.84rem;margin:8px 0 0}
 .extcams .arow input{font:inherit;font-family:var(--f-mono);font-size:.86rem;padding:5px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--sheet);color:var(--ink);width:100%}
 .extcams .arow input:disabled{opacity:.4}
 .ct.Speaker{color:var(--spk)}
+.btn.warnb{color:var(--warn);border-color:var(--warn)}
+.btn.okb{color:var(--ok);border-color:var(--ok)}
+.pcnote{font-size:.8rem;margin-top:4px}
+.pcnote.warn{color:var(--warn)}.pcnote.bad{color:var(--bad)}
+.legend .ln{width:18px;height:0;border-top:2px dashed currentColor;display:inline-block}
+.legend .sq{width:12px;height:12px;display:inline-block;border-radius:2px}

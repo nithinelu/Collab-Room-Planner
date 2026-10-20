@@ -10,7 +10,11 @@ import os
 import sys
 from pathlib import Path
 
+import webbrowser
+
 import webview
+
+from catalog_check import CatalogChecker
 
 APP_NAME = "Collab Room Planner"
 HERE = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
@@ -31,6 +35,20 @@ class Api:
     def __init__(self):
         self._window = None
         self._last_dir = str(Path.home() / "Documents")
+        self._checker = CatalogChecker(SETTINGS_DIR / "catalog_check.json")
+
+    # ---- vendor product check (runs once per app start, in the background) ----
+    def start_catalog_check(self, products):
+        return self._checker.start(products)
+
+    def catalog_status(self):
+        return self._checker.status()
+
+    def open_url(self, url):
+        if isinstance(url, str) and url.startswith(("https://", "http://")):
+            webbrowser.open(url)
+            return True
+        return False
 
     # ---- persisted UI state ----
     def load_state(self):

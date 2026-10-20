@@ -4,7 +4,7 @@
    rotation is clockwise degrees with 0 facing +y (into the room), so rotation = -aim. */
 const VRC_MAIN={ // our device id -> [VRC data_deviceid, width m, depth m, has colour option]
   "cisco-bar":["roomBar",0.534,0.0644,1],"cisco-barpro":["roomBarPro",0.96,0.09,1],
-  "cisco-board55":["brdPro55G2",1.278,0.092,0],"cisco-board75":["brdPro75G2",1.719,0.095,0],
+  "cisco-board55":["brdPro55G3",1.278,0.092,0],"cisco-board75":["brdPro75G3",1.719,0.095,0],
   "cisco-eq":["roomKitEqQuadCam",0.95,0.1025,1],"cisco-pro":["roomKitProG2QuadCam",0.95,0.1025,1],
   "cisco-eqx":["roomKitEqx",3.362,0.152,0],"cisco-deskpro":["webexDeskPro",0.628,0.17,0],
 };

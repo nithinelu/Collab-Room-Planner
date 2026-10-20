@@ -39,6 +39,68 @@ function screenTexture(text, w, h) {
   return tex;
 }
 
+/* Room finishes, drawn on canvases so the app stays offline. */
+const texCache = {};
+function canvasTex(key, w, h, draw) {
+  if (texCache[key]) { const t = texCache[key].clone(); t.needsUpdate = true; return t; }
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  draw(c.getContext("2d"), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4;
+  texCache[key] = t;
+  const t2 = t.clone(); t2.needsUpdate = true;
+  return t2;
+}
+function rnd(seed) { let x = seed; return () => (x = (x * 16807) % 2147483647) / 2147483647; }
+// vertical wood slats on black acoustic felt (feature wall behind the display)
+const slatTex = dark => canvasTex("slat" + dark, 1024, 512, (g, w, h) => {
+  g.fillStyle = dark ? "#121314" : "#202224"; g.fillRect(0, 0, w, h);
+  const r = rnd(7), pitch = 64, slat = 44;
+  for (let x = 0; x < w; x += pitch) {
+    const base = dark ? [92, 66, 44] : [176, 128, 86], v = (r() - 0.5) * 26;
+    const grd = g.createLinearGradient(x, 0, x + slat, 0);
+    grd.addColorStop(0, `rgb(${base.map(c => c + v - 18)})`); grd.addColorStop(0.5, `rgb(${base.map(c => c + v + 8)})`);
+    grd.addColorStop(1, `rgb(${base.map(c => c + v - 24)})`);
+    g.fillStyle = grd; g.fillRect(x + 10, 0, slat, h);
+    g.strokeStyle = "rgba(60,35,15,.18)"; g.lineWidth = 1;
+    for (let k = 0; k < 7; k++) { const gx = x + 12 + r() * (slat - 4); g.beginPath(); g.moveTo(gx, 0); g.bezierCurveTo(gx + 3, h * .3, gx - 3, h * .7, gx + 1, h); g.stroke(); }
+  }
+});
+// soft plaster with fine speckle
+const plasterTex = (dark, hex) => canvasTex("pl" + dark + hex, 256, 256, (g, w, h) => {
+  g.fillStyle = hex; g.fillRect(0, 0, w, h);
+  const r = rnd(11), img = g.getImageData(0, 0, w, h), d = img.data;
+  for (let i = 0; i < d.length; i += 4) { const n = (r() - 0.5) * (dark ? 8 : 10); d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+  g.putImageData(img, 0, 0);
+});
+// vertical oak boards (wood wall finish)
+const boardTex = dark => canvasTex("bd" + dark, 1024, 512, (g, w, h) => {
+  const r = rnd(5), pitch = 128, base = dark ? [120, 86, 58] : [190, 146, 102];
+  for (let x = 0; x < w; x += pitch) {
+    const v = (r() - 0.5) * 30, grd = g.createLinearGradient(x, 0, x + pitch, 0);
+    grd.addColorStop(0, `rgb(${base.map(c => c + v - 10)})`); grd.addColorStop(0.5, `rgb(${base.map(c => c + v + 6)})`);
+    grd.addColorStop(1, `rgb(${base.map(c => c + v - 14)})`);
+    g.fillStyle = grd; g.fillRect(x, 0, pitch, h);
+    g.fillStyle = "rgba(40,22,8,.35)"; g.fillRect(x, 0, 2, h);  // board joint
+    g.strokeStyle = "rgba(70,40,15,.16)"; g.lineWidth = 1.2;
+    for (let k = 0; k < 10; k++) { const gx = x + 6 + r() * (pitch - 12); g.beginPath(); g.moveTo(gx, 0); g.bezierCurveTo(gx + 6, h * .35, gx - 6, h * .65, gx + 2, h); g.stroke(); }
+  }
+});
+// woven fabric for the acoustic panels
+const fabricTex = hex => canvasTex("fb" + hex, 128, 128, (g, w, h) => {
+  g.fillStyle = hex; g.fillRect(0, 0, w, h);
+  g.globalAlpha = 0.08; g.fillStyle = "#000";
+  for (let y = 0; y < h; y += 2) g.fillRect(0, y, w, 1);
+  g.globalAlpha = 0.05; for (let x = 0; x < w; x += 3) g.fillRect(x, 0, 1, h);
+  g.globalAlpha = 1;
+});
+// low-pile carpet
+const carpetTex = dark => canvasTex("cp" + dark, 256, 256, (g, w, h) => {
+  g.fillStyle = dark ? "#2a3231" : "#9aa5a2"; g.fillRect(0, 0, w, h);
+  const r = rnd(3);
+  for (let i = 0; i < 9000; i++) { g.fillStyle = `rgba(${r() < .5 ? "255,255,255" : "0,0,0"},${0.04 + r() * 0.05})`; g.fillRect(r() * w, r() * h, 1.5, 1.5); }
+});
+
 function fan(radius, halfDeg, y, mat) {
   const h = THREE.MathUtils.degToRad(Math.min(halfDeg, 179.9));
   // CircleGeometry lies in XY; after rotateX(-90°) angle θ points to (cos θ, 0, -sin θ), so +Z is θ = -90°.
@@ -159,27 +221,51 @@ class Scene3D {
     const lineMat = (color, opacity = 1, dashed = false) => dashed
       ? new THREE.LineDashedMaterial({color, transparent: true, opacity, dashSize: 0.12, gapSize: 0.1, clippingPlanes: clip})
       : new THREE.LineBasicMaterial({color, transparent: true, opacity, clippingPlanes: clip});
-    const ACC = css("--accent"), MIC = css("--mic");
+    const ACC = css("--cam"), MIC = css("--mic"), DISP = css("--disp");
     const STC = {ok: css("--ok"), warn: css("--warn"), bad: css("--bad")};
 
     // floor, 1 m grid, walls (inward-facing, so walls between the viewer and the room are culled)
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D), std(isDark ? 0x2c3532 : 0xd8ddd9));
+    const ftex = carpetTex(isDark); ftex.repeat.set(W / 1.5, D / 1.5);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D), std(0xffffff, {map: ftex, roughness: 0.95}));
     floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, D / 2); floor.receiveShadow = true; G.add(floor);
     const gp = [];
     for (let x = 1; x < W; x++) gp.push(X(x), 0.002, 0, X(x), 0.002, D);
     for (let z = 1; z < D; z++) gp.push(-W / 2, 0.002, z, W / 2, 0.002, z);
     const gg = new THREE.BufferGeometry(); gg.setAttribute("position", new THREE.Float32BufferAttribute(gp, 3));
     G.add(new THREE.LineSegments(gg, new THREE.LineBasicMaterial({color: isDark ? 0x3a4642 : 0xc3cbc7})));
-    const wallMat = std(isDark ? 0x232c29 : 0xf1f3f2, {side: THREE.FrontSide});
+    // walls face inward, so the ones between the viewer and the room are culled; finishes ride on the same planes
     const walls = [
-      {w: W, p: [0, H / 2, 0], r: 0},
-      {w: W, p: [0, H / 2, D], r: Math.PI},
-      {w: D, p: [-W / 2, H / 2, D / 2], r: Math.PI / 2},
-      {w: D, p: [W / 2, H / 2, D / 2], r: -Math.PI / 2},
+      {w: W, p: [0, H / 2, 0], r: 0, kind: "feature"},
+      {w: W, p: [0, H / 2, D], r: Math.PI, kind: "rear"},
+      {w: D, p: [-W / 2, H / 2, D / 2], r: Math.PI / 2, kind: "side"},
+      {w: D, p: [W / 2, H / 2, D / 2], r: -Math.PI / 2, kind: "side"},
     ];
+    const woodWalls = S.mount.walls === "wood", plasterHex = isDark ? "#d6d2cb" : "#f4f2ee"; // white stays white in dark theme
+    const trimMat = std(isDark ? 0x5a4330 : 0xa57c55, {roughness: 0.55});
+    const skirtMat = std(woodWalls ? (isDark ? 0x3b2a1c : 0x6e4c30) : 0xf7f5f1, {roughness: 0.5});
+    const panelMat = std(0xffffff, {map: fabricTex(isDark ? "#3a4a5c" : "#c8b79c"), roughness: 1});
+    const onWall = (o, w, h, y, x, d, mat) => { // plane on wall o, centred at local x, height y, offset d into the room
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat), n = [Math.sin(o.r), 0, Math.cos(o.r)];
+      const t = [Math.cos(o.r), 0, -Math.sin(o.r)];
+      m.position.set(o.p[0] + n[0] * d + t[0] * x, y, o.p[2] + n[2] * d + t[2] * x); m.rotation.y = o.r; m.receiveShadow = true; G.add(m); return m;
+    };
     walls.forEach(o => {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(o.w, H), wallMat);
+      let mat;
+      if (o.kind === "feature") { const t = slatTex(isDark); t.repeat.set(o.w / 0.9, 1); mat = std(0xffffff, {map: t, roughness: 0.7}); }
+      else if (woodWalls) { const t = boardTex(isDark); t.repeat.set(o.w / 1.6, 1); mat = std(0xffffff, {map: t, roughness: 0.65}); }
+      else { const t = plasterTex(isDark, plasterHex); t.repeat.set(o.w / 2, H / 2); mat = std(0xffffff, {map: t, roughness: 0.95}); }
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(o.w, H), mat);
       m.position.set(...o.p); m.rotation.y = o.r; m.receiveShadow = true; G.add(m);
+      onWall(o, o.w, 0.09, 0.045, 0, 0.018, skirtMat);                                 // skirting board
+      onWall(o, o.w, 0.05, H - 0.025, 0, 0.01, skirtMat);                              // ceiling cornice
+      if (o.kind === "rear" && !woodWalls) {                                            // framed acoustic panels on white walls
+        const n = Math.max(1, Math.min(4, Math.floor(o.w / 1.6))), pw = Math.min(1.2, o.w / n - 0.3);
+        for (let i = 0; i < n; i++) {
+          const x = (i - (n - 1) / 2) * (o.w / n);
+          onWall(o, pw + 0.05, 0.95, 1.75, x, 0.02, trimMat);
+          onWall(o, pw, 0.9, 1.75, x, 0.03, panelMat);
+        }
+      }
     });
     const outline = [[-W / 2, 0], [W / 2, 0], [W / 2, D], [-W / 2, D], [-W / 2, 0]].map(([x, z]) => new THREE.Vector3(x, 0.004, z));
     G.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(outline), new THREE.LineBasicMaterial({color: css("--ink")})));
@@ -293,6 +379,9 @@ class Scene3D {
     fr.push(0, camY, lz, 0, EYE, sp.reach);
     const fg = new THREE.BufferGeometry(); fg.setAttribute("position", new THREE.Float32BufferAttribute(fr, 3));
     FG.add(new THREE.LineSegments(fg, lineMat(ACC, 0.55)));
+    // display viewing zone: farthest comfortable seat per the 6x image-height rule
+    const VG = new THREE.Group(); VG.position.set(X(MP.x), 0, L.main ? MP.y : 0.02); VG.rotation.y = ma; O.add(VG);
+    VG.add(arcLine(6 * dh, 60, 0.02, 0, lineMat(DISP, 0.85, true), true));
 
     // mic pickup zones on the floor
     if (sp.mic > 0) {
