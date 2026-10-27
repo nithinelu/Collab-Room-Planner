@@ -116,3 +116,7 @@ p.n{color:var(--muted);font-size:.84rem;margin:8px 0 0}
 .pcnote.warn{color:var(--warn)}.pcnote.bad{color:var(--bad)}
 .legend .ln{width:18px;height:0;border-top:2px dashed currentColor;display:inline-block}
 .legend .sq{width:12px;height:12px;display:inline-block;border-radius:2px}
+.prow{display:flex;gap:16px;flex-wrap:wrap;margin:4px 0 8px}
+.prow select,#inst td select{font:inherit;font-size:.82rem;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--sheet);color:var(--ink)}
+#inst td select:disabled{opacity:.75}
+.notes li.bad{color:var(--bad)}

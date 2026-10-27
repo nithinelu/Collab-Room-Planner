@@ -74,6 +74,17 @@ def write_workbook(path, payload, decode):
         r += 1
         ws.cell(row=r, column=5, value="CAT6 total").font = Font(bold=True)
         ws.cell(row=r, column=6, value=f'=SUMIF(D{first}:D{r - 2},"CAT6",F{first}:F{r - 2})').font = Font(bold=True)
+        pw = opt.get("power")
+        if pw:
+            r += 2
+            _head(ws, r, ["PoE peripheral", "PoE standard", "Class W", "Typical W", "Powered from"])
+            for row in pw["rows"]:
+                r += 1
+                for col, v in enumerate(row, 1):
+                    ws.cell(row=r, column=col, value=v).border = BOX
+            for line in pw["summary"]:
+                r += 1
+                ws.cell(row=r, column=1, value=line).font = Font(italic=True)
         r += 2
         ws.cell(row=r, column=1, value="Power points: " + cab.get("power", ""))
         for col, w in zip("ABCDEF", (34, 30, 22, 14, 40, 12)):

@@ -135,25 +135,35 @@ function install(d,L,A,c){
   }
   if(!d.board) G.screens.forEach((s,i)=>run(epName,G.screens.length>1?`Display ${i+1}`:"Display","HDMI","Display video",routePts(ep,[s.x,fy,s.z],"wall")));
   run(rows?"Lectern panel":"Table box",epName,"HDMI","Content share (BYOD)",tablePts(ep,box,fb));
-  if(d.kit.some(k=>/navigator|tap|pad|console/i.test(k))) run(rows?"Lectern controller":"Table controller",epName,"CAT6","Touch controller (PoE)",tablePts(ep,ctl,fb));
+  // PoE peripherals follow the power plan: endpoint port, PoE switch (rack) or injector (rack)
+  const PA=A.P, hostOf=key=>PA&&PA.at[key];
+  const dest=(key,dflt)=>{const h=hostOf(key); if(!h) return dflt;
+    if(h.startsWith("ep:")){const p=PA.ports.find(q=>"ep:"+q.id===h); return {pt:ep,name:`${epName}${p?` · ${p.label}`:""}`};}
+    return {pt:rackP,name:h==="inj"?"Rack (PoE+ injector)":"Rack (PoE switch)"};};
+  if(d.kit.some(k=>/navigator|tap|pad|console/i.test(k))){
+    const t=dest("ctl",{pt:ep,name:epName});
+    run(rows?"Lectern controller":"Table controller",t.name,"CAT6","Touch controller (PoE)",tablePts(t.pt,ctl,fb));
+  }
   A.mics.forEach((m,i)=>{
     const dante=A.ad.ext&&A.ad.ext.dante, type=dante||/cisco/i.test(A.ad.name)?"CAT6":"Vendor", p=[m.x,m.y,m.z??TABLE_TOP+0.02];
-    const to=dante?rackP:ep;
-    const pts=A.ad.ceil?routePts(to,p,"ceil"):tablePts(to,p,fb);
-    run(`${A.ad.ceil?"Ceiling":"Table"} mic ${i+1}`,dante?"Rack (PoE switch → DSP)":epName,type,A.ad.name+(dante?" (Dante, PoE)":type==="CAT6"?" (PoE)":" cable"),pts);
+    const t=dest(`mic${i}`,{pt:dante?rackP:ep,name:dante?"Rack (PoE switch → DSP)":epName});
+    const pts=A.ad.ceil?routePts(t.pt,p,"ceil"):tablePts(t.pt,p,fb);
+    run(`${A.ad.ceil?"Ceiling":"Table"} mic ${i+1}`,t.name,type,A.ad.name+(dante?" (Dante, PoE)":type==="CAT6"?" (PoE)":" cable"),pts);
   });
   const au=A.au;
   if(au&&au.spk) au.spk.pts.forEach((p,i)=>{
-    const pts=routePts(rackP,[p.x,p.y,S.H],"ceil");
-    if(au.spk.net) run(`Speaker ${i+1}`,"Rack (PoE switch)","CAT6",`${au.spk.name} (${au.spk.note})`,pts);
+    const t=dest(`spk${i}`,{pt:rackP,name:"Rack (PoE switch)"});
+    const pts=routePts(au.spk.net?t.pt:rackP,[p.x,p.y,S.H],"ceil");
+    if(au.spk.net) run(`Speaker ${i+1}`,t.name,"CAT6",`${au.spk.name} (${au.spk.note})`,pts);
     else run(`Speaker ${i+1}`,au.dsp&&au.dsp.amp?"DSP amplifier (rack)":"Amplifier (rack)","Speaker","Loudspeaker feed, 2 × 1.5 mm²",pts);
   });
   if(au&&au.dsp&&ep!==rackP) run("DSP (rack)",epName,"CAT6","DSP ↔ endpoint audio (USB extender / analog, confirm)",routePts(rackP,ep,"wall"));
   A.cams.filter(k=>!k.main).forEach((k,i)=>{
     (EXT_CABLES[k.ext.id]||[]).forEach(cb=>{
-      const to=cb.to==="rack"?rackP:ep, p=[k.x,k.y,k.z];
+      const t=cb.type==="CAT6"?dest(`cam${i}`,null):null;
+      const to=t?t.pt:cb.to==="rack"?rackP:ep, p=[k.x,k.y,k.z];
       const pts=k.hfov>=360?tablePts(to,p,fb):routePts(p,to,"wall");
-      run(`C${i+2} ${k.name}`,cb.to==="rack"?"Rack (PoE switch)":epName,cb.type,`Camera ${cb.what}`,pts);
+      run(`C${i+2} ${k.name}`,t?t.name:cb.to==="rack"?"Rack (PoE switch)":epName,cb.type,`Camera ${cb.what}`,pts);
     });
   });
 
@@ -180,7 +190,8 @@ function install(d,L,A,c){
   boq.push([rows?"Lectern connectivity panel (HDMI + USB-C + power)":"Table connectivity box (HDMI + USB-C + power)",1,"Content share point"]);
   if(C.floorBox) boq.push(["Floor box with power and data",1,rows?"At the lectern":"Under the table"]);
   if(spkM) boq.push(["Loudspeaker cable 2 × 1.5 mm², metres",up05(spkM),"Amplifier to ceiling speakers"]);
-  if(poe) boq.push(["PoE+ switch ports (AV VLAN, Dante/AES67 QoS)",poe,"Check the switch PoE budget"]);
+  if(PA) PA.boq.forEach(x=>boq.push(x));
+  else if(poe) boq.push(["PoE+ switch ports (AV VLAN, Dante/AES67 QoS)",poe,"Check the switch PoE budget"]);
   boq.push([`Cable containment (${ROUTES[C.route].toLowerCase()}), metres`,contain,"Estimate from the cable routes"]);
   const power=[...(d.board?[d.name]:G.screens.map((s,i)=>`Display ${G.screens.length>1?i+1:""}`.trim())),
     ...(d.board?[]:[d.codec?"Quad Camera":"Video bar"]),"Rack / codec",rows?"Lectern":"Table box",...(C.floorBox?["Floor box"]:[])];

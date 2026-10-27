@@ -15,6 +15,13 @@ device (Neat and Huawei IdeaHub ES3 / ES2 / ES2 Plus / S2 / B3 included), with c
   with a count (0 = automatic from coverage), ceiling mics (Cisco Ceiling Mic Pro, Shure MXA920, Sennheiser TeamConnect
   Ceiling 2 / Medium) and an external DSP (Auto, Shure P300 / IntelliMix Room, Biamp TesiraFORTÉ X 400, QSC Core Nano).
   Speakers show as S1, S2… in 2D/3D with coverage rings; they feed the BOQ (mounts, DSP, amp, PoE ports) and cable schedule.
+- **Microphones** per device: built-in only, built-in + table mics as needed (auto), table/desk mics with a set count
+  (e.g. Cisco Table Microphone Pro), or ceiling mics (Cisco Ceiling Microphone Pro, Shure MXA925, Sennheiser TCC 2 / M / M Plus).
+- **PoE power budget** (Installation section, per option): every PoE peripheral with its standard, class and typical watts;
+  the endpoint's own PoE ports and budget (Codec EQ 4 × PoE++ / 90 W, Codec Pro G2 8 ports / 120 W, Room Bar Pro
+  Navigator + 2 × 802.3af, Board Pro G3 Navigator port); distribution Auto (endpoint ports first, rest on the switch),
+  All on PoE switch, or Manual per peripheral (endpoint port / switch / PoE+ injector) with warnings for wrong PoE class,
+  double-booked ports and over-budget hosts. Recommends the PoE switch size; cables and BOQ follow the split.
 - **Mounting & cabling** panel: display bottom height, video bar above/below, wall/corner camera heights, side-camera
   distance; equipment location, cable route (ceiling / floor / wall trunking), floor box, uplink, slack and service loops.
 - **Installation section**: mounting checks (camera tilt, front-row viewing angle, 6× rule, ceiling clearance, sightlines)

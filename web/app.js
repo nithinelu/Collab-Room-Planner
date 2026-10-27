@@ -122,6 +122,7 @@ const DEFAULTS={name:"",preset:"medium",layout:"board",W:4.5,D:6,H:2.8,seats:10,
   dev:["cisco-barpro","maxhub-v50"],view:["3d","3d"],specs:{},ext:[[],[]],
   mount:{bottom:0.9,bar:"above",wallH:1.9,cornerH:2.1,sideY:0,walls:"white"},
   cab:{rack:"credenza",route:"ceiling",floorBox:true,uplink:15,slack:10,loop:0.5,show:true},
+  power:[{mode:"auto",basis:"class",assign:{}},{mode:"auto",basis:"class",assign:{}}],
   audio:[{spk:"none",spkN:0,mic:"device",micN:0,dsp:"auto"},{spk:"none",spkN:0,mic:"device",micN:0,dsp:"auto"}]};
 let S=JSON.parse(JSON.stringify(DEFAULTS));
 
@@ -161,6 +162,7 @@ function applyState(s){
   if(!LAYOUTS[S.layout]||(S.layout==="vrc"&&!(S.vrc&&S.vrc.seats))) S.layout="board";
   S.mount=Object.assign({},DEFAULTS.mount,(s&&s.mount)||{});
   S.cab=Object.assign({},DEFAULTS.cab,(s&&s.cab)||{});
+  S.power=[0,1].map(c=>Object.assign({mode:"auto",basis:"class",assign:{}},((s&&s.power)||[])[c]||{}));
   S.audio=[0,1].map(c=>Object.assign({},DEFAULTS.audio[c],((s&&s.audio)||[])[c]||{}));
   if(!Array.isArray(S.ext)) S.ext=[[],[]];
   S.ext=[0,1].map(c=>(Array.isArray(S.ext[c])?S.ext[c]:[]).filter(x=>x&&extById(x.cam)&&POSITIONS[x.pos]));
@@ -252,17 +254,27 @@ function analyse(d,L,c){
   const MP=L.main||{x:L.cx,y:0.08,aim:0}, sp=specs[d.id], cy=MP.y, au=typeof audioPlan==="function"?audioPlan(d,L,c):null;
   let micPlan=sp.mic*S.plan/100, ad=(L.kind!=="board"&&d.addonRows)||d.addon, mics=[];
   if(au&&au.mic){micPlan=0; ad={name:au.mic.name,r:au.mic.r,max:au.mic.pts.length,incl:0,ceil:1,ext:au.mic}; mics=au.mic.pts.slice();}
+  const micMode=au?au.cfg.mic:"device";
+  if(micMode==="builtin") ad={...ad,max:0,incl:0};
+  if(micMode==="table"&&d.addon.max>0) ad={...d.addon,table:1}; // desk mics even in classroom / auditorium
+  let fixedTable=null;
+  if(micMode==="table"&&ad.table&&au.cfg.micN>0){
+    const n=Math.min(au.cfg.micN,ad.max||au.cfg.micN);
+    fixedTable=L.kind==="board"&&!L.vrc?Array.from({length:n},(_,i)=>({x:L.cx,y:L.y0+L.len*(i+0.5)/n}))
+      :(typeof gridPlace==="function"?gridPlace(L,ad.r,n):[]);
+  }
   const cams=[{main:1,name:d.name,x:MP.x,y:cy,aim:MP.aim,hfov:sp.hfov,pan:sp.pan,track:0,reach:sp.reach}];
   (S.ext[c]||[]).forEach(x=>{const e=extById(x.cam); cams.push({...extPose(x.pos,L),...e,ext:e,pos:x.pos,xv:!!x.xv,esv:!!x.esv,...(x.pose||{}),mic:e.mic*S.plan/100});});
   const extMics=cams.filter(k=>k.mic>0&&!k.main);
   const tableY=t=>Math.min(L.y0+L.len-0.3,Math.max(L.y0+0.3,t));
   const mz=ad.ceil?S.H:TABLE_TOP+0.02;
   for(let i=0;i<ad.incl;i++) mics.push({x:L.cx,y:L.y0+L.len*(i+0.5)/ad.incl,z:mz});
-  if(L.fixedMics&&!(au&&au.mic)) mics=L.fixedMics.map(m=>({x:m.x,y:m.y,z:mz}));
+  if(L.fixedMics&&!(au&&au.mic)&&micMode!=="builtin") mics=L.fixedMics.map(m=>({x:m.x,y:m.y,z:mz}));
+  if(fixedTable) mics=fixedTable.map(m=>({x:m.x,y:m.y,z:mz}));
   const heard=s=>Math.hypot(s.x-MP.x,s.y-cy)<=micPlan || mics.some(m=>Math.hypot(s.x-m.x,s.y-m.y)<=ad.r)
     || extMics.some(k=>Math.hypot(s.x-k.x,s.y-k.y)<=k.mic);
   let guard=0;
-  while(!L.fixedMics && ad.r>0 && mics.length<ad.max && guard++<20){
+  while(!L.fixedMics && !fixedTable && ad.r>0 && mics.length<ad.max && guard++<20){
     const un=L.seats.filter(s=>!heard(s)); if(!un.length) break;
     const yMin=Math.min(...un.map(s=>s.y));
     if(L.kind==="board"&&!L.vrc) mics.push({x:L.cx,y:tableY(yMin+ad.r*0.6),z:mz});
@@ -293,6 +305,7 @@ function analyse(d,L,c){
     ok:seats.filter(s=>s.st==="ok").length, warn:seats.filter(s=>s.st==="warn").length, bad:seats.filter(s=>s.st==="bad").length};
   res.au=au;
   if(au&&au.spk) au.spkCov=seats.filter(s=>au.spk.pts.some(p=>Math.hypot(s.x-p.x,s.y-p.y)<=au.spk.r)).length;
+  res.P=typeof powerPlan==="function"?powerPlan(d,res,c):null;
   res.I=typeof install==="function"?install(d,L,res,c):null;
   return res;
 }
@@ -480,12 +493,16 @@ function buildPlans(){
 }
 function fillAudio(c){
   const d=byId(S.dev[c]), a=S.audio[c], sel=(k,list)=>`<select data-k="${k}" aria-label="${k}">${list.map(o=>`<option value="${o.id}"${o.id===a[k]?" selected":""}>${esc(o.name)}</option>`).join("")}</select>`;
-  const spk=audioFor(SPEAKERS,d.id), mic=audioFor(CEIL_MICS,d.id);
+  const spk=audioFor(SPEAKERS,d.id), ceil=audioFor(CEIL_MICS,d.id).filter(o=>o.id!=="device");
+  const hasTable=d.addon.max>0, tbl=d.addon.name;
+  const mic=[{id:"device",name:hasTable?`Built-in + ${tbl} as needed (auto)`:"Built-in mics"},
+    ...(hasTable?[{id:"builtin",name:"Built-in mics only"},{id:"table",name:`Table / desk mics: ${tbl}`}]:[]),
+    ...ceil.map(o=>({id:o.id,name:`Ceiling mics: ${o.name}`}))];
   if(!spk.some(o=>o.id===a.spk)) a.spk="none";
   if(!mic.some(o=>o.id===a.mic)) a.mic="device";
   $("aud"+c).innerHTML=`<div class="label">Audio system</div>
     <div class="row arow"><span class="hint">Speakers</span>${sel("spk",spk)}<input type="number" data-k="spkN" min="0" max="60" value="${a.spkN}" title="Number of speakers (0 = automatic)" aria-label="Number of speakers" ${a.spk==="none"?"disabled":""}></div>
-    <div class="row arow"><span class="hint">Ceiling mics</span>${sel("mic",mic)}<input type="number" data-k="micN" min="0" max="60" value="${a.micN}" title="Number of ceiling mics (0 = automatic)" aria-label="Number of ceiling mics" ${a.mic==="device"?"disabled":""}></div>
+    <div class="row arow"><span class="hint">Microphones</span>${sel("mic",mic)}<input type="number" data-k="micN" min="0" max="60" value="${a.micN}" title="Number of table or ceiling mics (0 = automatic)" aria-label="Number of microphones" ${a.mic==="device"||a.mic==="builtin"?"disabled":""}></div>
     <div class="row arow"><span class="hint">External DSP</span>${sel("dsp",DSPS)}<span></span></div>
     <div class="hint">Count 0 = automatic from coverage. Cisco Ceiling Speaker Pro / Ceiling Mic Pro connect to the Cisco codec directly; Shure and Sennheiser are Dante and go through a DSP.</div>`;
 }
@@ -548,7 +565,7 @@ function render(){
     $("note"+c).innerHTML=notes.map(t=>`<li>${esc(t)}</li>`).join("");
     boq.appendChild(boqBlock(d,A,c));
     if(typeof pcNote==="function") pcNote(c);
-    if(A.I){const el=document.createElement("div"); el.innerHTML=installHtml(A.I,d,c); $("inst").appendChild(el);}
+    if(A.I){const el=document.createElement("div"); el.innerHTML=installHtml(A.I,d,c)+(A.P&&typeof powerHtml==="function"?powerHtml(A.P,d,c):""); $("inst").appendChild(el);}
     markCam(c);
   }
   if(window.View3D) window.View3D.prune(n);
@@ -595,7 +612,7 @@ function boqRows(d,A){
   }
   if(au&&au.dsp) r.push([au.dsp.name,1,au.needDsp.length?au.needDsp.join("; "):"Selected"]);
   if(au&&au.spk&&au.spk.amp&&!(au.dsp&&au.dsp.amp)) r.push(["Power amplifier (size to speaker count, confirm model)",1,"For passive ceiling speakers"]);
-  if(A.extra) r.push([A.ad.name,A.extra,A.ad.ext?"Ceiling array, replaces device/table mics":A.ad.ceil?"Ceiling mounted, covers the seating area":A.micPlan>0?`Coverage beyond ${fmt(A.micPlan)} m planning radius`:"Codec has no built-in mics"]);
+  if(A.extra) r.push([A.ad.name,A.extra,A.ad.table?`Table / desk mics (${au&&au.cfg.micN?au.cfg.micN+" selected":"auto count"})`:A.ad.ext?"Ceiling array, replaces device/table mics":A.ad.ceil?"Ceiling mounted, covers the seating area":A.micPlan>0?`Coverage beyond ${fmt(A.micPlan)} m planning radius`:"Codec has no built-in mics"]);
   const grp={};
   A.cams.filter(k=>!k.main).forEach(k=>{const g=grp[k.ext.id]||(grp[k.ext.id]={name:k.name,n:0,pos:[],tags:new Set()}); g.n++; g.pos.push(POSITIONS[k.pos]);
     g.tags.add(k.xv?(A.cams.filter(q=>q.xv).length>=4?"Dual cross-view":"Cisco cross-view"):k.esv?"Extended Speaker View":"Extra camera");});
@@ -645,6 +662,12 @@ async function exportXlsx(){
         hfov:A.sp.hfov,reach:A.sp.reach,mic:A.sp.mic,addon_mics:A.extra},
       mount:A.I?A.I.mount.map(m=>[m.item,m.value,m.check,m.note]):[],
       runs:A.I?A.I.runs.map((r,i)=>[i+1,r.from,r.to,r.type==="HDMI"?`HDMI ${r.std} m`:r.type,r.purpose,r.len]):[],
+      power:A.P&&A.P.items.length?{
+        rows:A.P.items.map(it=>{const h=A.P.at[it.key], p=A.P.ports.find(q=>"ep:"+q.id===h);
+          return [it.label,POE_STD[it.std].label,it.reserve,it.typ,h==="switch"?"PoE switch":h==="inj"?"PoE+ injector":`${A.P.host.name} · ${p?p.label:""}`];}),
+        summary:[A.P.host?`${A.P.host.name}: ${A.P.epLoad.toFixed(1)} of ${A.P.host.total} W`:`${d.name}: no PoE ports`,
+          `PoE switch: ${A.P.swPorts} device(s), ${A.P.swLoad.toFixed(1)} W`+(A.P.rec?` → ≥${A.P.rec.ports}-port ${A.P.rec.std}, ≥${A.P.rec.budget} W`:""),
+          `Basis: ${A.P.cfg.basis==="typ"?"typical draw":"PoE class allocation"}; distribution: ${A.P.cfg.mode}`,...A.P.warn]}:null,
       cabling:A.I?{route:ROUTES[S.cab.route],rack:RACKS[S.cab.rack],slack:S.cab.slack,loop:S.cab.loop,power:A.I.power.join(", ")}:null,
       image:window.View3D?window.View3D.snapshot(c,1280,720):null});
   }
@@ -719,6 +742,16 @@ function wire(){
   $("openProj").addEventListener("click",openProject);
   $("importVrc").addEventListener("click",()=>importVrc()); // vrc.js loads after app.js
   $("checkBadge").addEventListener("click",()=>{const p=$("checkPanel"); p.hidden=false; p.open=true; p.scrollIntoView({behavior:"smooth"});});
+  $("inst").addEventListener("change",e=>{ // PoE distribution controls
+    const t=e.target, c=+(t.dataset.c??t.dataset.pmode??t.dataset.pbasis); if(isNaN(c)) return;
+    const P=S.power[c];
+    if(t.dataset.pmode!=null){
+      if(t.value==="manual"&&P.mode!=="manual"){const A=analyse(byId(S.dev[c]),layout(),c); P.assign={...A.P.at};} // start from the current split
+      P.mode=t.value;
+    } else if(t.dataset.pbasis!=null) P.basis=t.value;
+    else if(t.dataset.pk) P.assign[t.dataset.pk]=t.value;
+    save(); render();
+  });
   $("checkPanel").addEventListener("click",e=>{const b=e.target.closest("[data-url]"); if(b&&Host.api) Host.api.open_url(b.dataset.url);});
   document.addEventListener("keydown",e=>{
     if(!e.ctrlKey) return;

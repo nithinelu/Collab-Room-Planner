@@ -13,8 +13,8 @@ const SPEAKERS=[
 ];
 // r = planning pickup radius (m) under a ~2.8 m ceiling
 const CEIL_MICS=[
-  {id:"device",name:"Device mics + add-on mics"},
-  {id:"cisco-cmp",name:"Cisco Ceiling Microphone Pro",r:4,for:["cisco-barpro","cisco-eq","cisco-eqx","cisco-pro"],native:1},
+  {id:"device",name:"Built-in mics + add-on mics as needed"},
+  {id:"cisco-cmp",name:"Cisco Ceiling Microphone Pro",r:4,for:["cisco-barpro","cisco-eq","cisco-eqx","cisco-pro","cisco-board55","cisco-board75"],native:1},
   {id:"shure-mxa925",name:"Shure MXA925 ceiling array (MXA920 successor)",r:4.5,dante:1},
   {id:"senn-tcc2",name:"Sennheiser TeamConnect Ceiling 2",r:4.4,dante:1},
   {id:"senn-tccm",name:"Sennheiser TeamConnect Ceiling Medium",r:3.5,dante:1},
