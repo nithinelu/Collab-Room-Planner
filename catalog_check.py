@@ -1,7 +1,7 @@
 """Startup product check: open each catalog product's official page in hidden WebView2 windows and classify it.
 
 Vendor sites (Cisco, Huawei, Neat ...) reject scripted HTTP clients, so pages are loaded by the same browser
-engine the app uses. Runs in the background; results go to %APPDATA%/Collab Room Planner/catalog_check.json.
+engine the app uses. Runs in the background; results go to %APPDATA%/MeetSpace 3D/catalog_check.json.
 
 Status per product:
   ok       page loads and names the product

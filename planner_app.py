@@ -1,4 +1,4 @@
-"""Collab Room Planner - desktop app.
+"""MeetSpace 3D (formerly Collab Room Planner) - desktop app.
 
 Hosts the planner UI (web/) in a native window via pywebview and gives it file access:
 save/open projects, export the BOQ to Excel (with a 3D snapshot per option) and save images.
@@ -16,9 +16,13 @@ import webview
 
 from catalog_check import CatalogChecker
 
-APP_NAME = "Collab Room Planner"
+APP_NAME = "MeetSpace 3D"
 HERE = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
 SETTINGS_DIR = Path(os.environ.get("APPDATA", Path.home())) / APP_NAME
+OLD_SETTINGS_DIR = Path(os.environ.get("APPDATA", Path.home())) / "Collab Room Planner"  # name before 2026-10-28
+if not SETTINGS_DIR.exists() and OLD_SETTINGS_DIR.exists():  # carry the last session and product check over
+    import shutil
+    shutil.copytree(OLD_SETTINGS_DIR, SETTINGS_DIR, ignore=shutil.ignore_patterns("webview"))
 STATE_FILE = SETTINGS_DIR / "state.json"
 
 
@@ -151,7 +155,7 @@ def main():
     api = Api()
     window = webview.create_window(
         APP_NAME, str(HERE / "web" / "index.html"), js_api=api,
-        width=1500, height=950, min_size=(900, 640), background_color="#eef1ef")
+        width=1500, height=950, min_size=(900, 640), background_color="#eef2f8")
     api._window = window
     debug = "--debug" in sys.argv
     # private mode = no disk cache, so updated web files always load; app state lives in state.json

@@ -1,4 +1,4 @@
-"""Excel export for Collab Room Planner.
+"""Excel export for MeetSpace 3D.
 
 One BOQ sheet per option (Item / Description / Qty columns, so the BOQ Costing Tool can read it
 as a plain hardware BOQ), then a Summary sheet with room data, coverage and the 3D snapshots.
@@ -94,7 +94,7 @@ def write_workbook(path, payload, decode):
     ws = wb.create_sheet("Summary")
     ws["A1"] = name
     ws["A1"].font = Font(bold=True, size=14)
-    ws["A2"] = f"Collab Room Planner · {date.today():%d %b %Y}"
+    ws["A2"] = f"MeetSpace 3D · {date.today():%d %b %Y}"
     ws["A2"].font = Font(italic=True, color="666666")
     rows = [
         ("Room type", room.get("layout", "Boardroom")),

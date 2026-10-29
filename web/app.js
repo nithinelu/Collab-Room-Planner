@@ -1,4 +1,4 @@
-/* Collab Room Planner: catalog, room layout, coverage analysis, 2D plan, BOQ and app glue.
+/* MeetSpace 3D: catalog, room layout, coverage analysis, 2D plan, BOQ and app glue.
    The 3D view lives in view3d.js and registers itself as window.View3D. */
 const huawei=(model,size,o)=>({v:"Huawei",id:`huawei-${model.toLowerCase().replace(/\s+/g,"")}-${size}`,name:`IdeaHub ${model} ${size}"`,
   pan:0,board:size,kit:[`HUAWEI IdeaHub ${model} ${size}" (${o.note})`],addon:{name:"Huawei expansion mic (confirm model)",r:3,max:2,incl:0},...o});
@@ -82,6 +82,7 @@ const CATALOG = [
    src:{hfov:1,reach:0,mic:1}},
 ];
 const VENDORS=["Cisco","Logitech","MAXHUB","Huawei","Neat"];
+const VENDOR_COLOR={Cisco:"#049fd9",Logitech:"#00a8e0",MAXHUB:"#e4002b",Huawei:"#c7000b",Neat:"#2b2b2b"};
 
 /* Extension cameras. hfov>=360 = table-centre 360° camera; track = PTZ that re-aims itself
    (seats inside its pan range count as covered); mic = pickup radius when it has its own mics. */
@@ -118,7 +119,14 @@ const specs={};
 const resetSpecs=id=>{const d=byId(id);specs[id]={hfov:d.hfov,pan:d.pan,reach:d.reach,mic:d.mic};};
 CATALOG.forEach(d=>resetSpecs(d.id));
 
-const DEFAULTS={name:"",preset:"medium",layout:"board",W:4.5,D:6,H:2.8,seats:10,tw:1.2,gap:1.5,plan:80,compare:true,dual:false,sync:false,
+const THEMES={blue:0,ocean:1,sand:0,light:0,dark:1,system:null}; // value = dark tone?
+window.themeIsDark=()=>{const t=THEMES[S.theme]; return t==null?matchMedia("(prefers-color-scheme: dark)").matches:!!t;};
+function applyTheme(){
+  if(!(S.theme in THEMES)) S.theme="blue";
+  if(S.theme==="system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme=S.theme;
+  const sel=document.getElementById("themeSel"); if(sel) sel.value=S.theme;
+}
+const DEFAULTS={theme:"blue",name:"",preset:"medium",layout:"board",W:4.5,D:6,H:2.8,seats:10,tw:1.2,gap:1.5,plan:80,compare:true,dual:false,sync:false,
   dev:["cisco-barpro","maxhub-v50"],view:["3d","3d"],specs:{},ext:[[],[]],
   mount:{bottom:0.9,bar:"above",wallH:1.9,cornerH:2.1,sideY:0,walls:"white"},
   cab:{rack:"credenza",route:"ceiling",floorBox:true,uplink:15,slack:10,loop:0.5,show:true},
@@ -398,7 +406,8 @@ function buildPlans(){
     const el=document.createElement("article"); el.className="sheet plan"; el.dataset.col=c;
     el.innerHTML=`
       <div class="plan-head">
-        <div><span class="tag">${c?"B":"A"}</span><span class="label">${d.board?"Display with integrated camera":"Video bar"}</span></div>
+        <div class="ph-title"><span class="tag">${c?"B":"A"}</span><div><span class="vbadge" style="--vb:${VENDOR_COLOR[d.v]||"var(--accent)"}">${esc(d.v)}</span>
+          <div class="ph-name">${esc(d.name)}</div><span class="label">${d.board?"Display with integrated camera":d.codec?"Codec kit":"Video bar"}</span></div></div>
         <div class="seg" role="group" aria-label="View">
           <button data-v="3d" aria-pressed="${v==="3d"}">3D view</button>
           <button data-v="2d" aria-pressed="${v==="2d"}">2D plan</button>
@@ -554,13 +563,16 @@ function render(){
     $("svg"+c).innerHTML=svgPlan(d,L,A,c);
     if(window.View3D) window.View3D.update(c,$("g3d"+c),{d,L,A,S,I:A.I});
     const tot=A.seats.length;
+    const tile=(n,cls,label,title="")=>{const p=tot?n/tot:0, C=2*Math.PI*16;
+      return `<div class="tile ${cls}" title="${esc(title)}"><svg viewBox="0 0 40 40"><circle class="trk" cx="20" cy="20" r="16"/><circle class="val" cx="20" cy="20" r="16" stroke-dasharray="${(p*C).toFixed(1)} ${C.toFixed(1)}"/></svg>
+        <div><b>${n}<small>/${tot}</small></b><span>${label}</span></div></div>`;};
     $("ver"+c).innerHTML=
-      `<span class="pill ${A.bad?"bad":A.warn?"warn":"ok"}">${A.ok}/${tot} seats fully covered</span>`+
-      `<span class="pill ${A.seen===tot?"ok":"warn"}">camera ${A.seen}/${tot}</span>`+
-      (A.au&&A.au.spk?`<span class="pill ${A.au.spkCov===tot?"ok":"warn"}">speakers ${A.au.spk.pts.length} · ${A.au.spkCov}/${tot}</span>`:"")+
-      `<span class="pill ${A.heardN===tot?"ok":"bad"}">audio ${A.heardN}/${tot}</span>`+
-      `<span class="pill ${A.faceN===tot?"ok":"info"}" title="Seats seen face-on by some camera when people turn to talk across the table">${L.kind==="board"?"face-on across table":"face-on"} ${A.faceN}/${tot}</span>`+
-      `<span class="pill info">display ≥ ${A.rec}"</span>`;
+      tile(A.ok,A.bad?"bad":A.warn?"warn":"ok","Fully covered","Seen and heard")+
+      tile(A.seen,A.seen===tot?"ok":"warn","Camera")+
+      tile(A.heardN,A.heardN===tot?"ok":"bad","Audio")+
+      tile(A.faceN,A.faceN===tot?"ok":"info",L.kind==="board"?"Face-on (across table)":"Face-on","Seats seen face-on by some camera when people turn to talk across the table")+
+      (A.au&&A.au.spk?tile(A.au.spkCov,A.au.spkCov===tot?"ok":"warn",`Speakers (${A.au.spk.pts.length})`):"")+
+      `<div class="tile info disp"><div class="big">${A.rec}"</div><div><b>Display</b><span>minimum size</span></div></div>`;
     const notes=noteList(d,L,A);
     $("note"+c).innerHTML=notes.map(t=>`<li>${esc(t)}</li>`).join("");
     boq.appendChild(boqBlock(d,A,c));
@@ -688,13 +700,15 @@ async function openProject(){
   try{
     const s=await Host.api.open_project(); if(!s) return;
     if(s.error){status(s.error);return;}
-    applyState(s.state); syncInputs(); buildPlans(); render(); save(); status("Opened "+s.path);
+    const th=S.theme; applyState(s.state); S.theme=th; // theme is a viewer preference, not part of the project
+    syncInputs(); buildPlans(); render(); save(); status("Opened "+s.path);
   }catch(e){status("Open failed: "+e);}
 }
 
 /* ---------- inputs ---------- */
 const NUM_KEYS=["W","D","H","seats","tw","gap","plan"];
 function syncInputs(){
+  applyTheme();
   NUM_KEYS.forEach(k=>$(k).value=S[k]);
   document.querySelectorAll("[data-grp]").forEach(el=>{
     const v=S[el.dataset.grp][el.dataset.key];
@@ -723,6 +737,12 @@ function wire(){
     save();render();
   }));
   $("pname").addEventListener("input",e=>{S.name=e.target.value;save();});
+  // section nav: highlight the section currently in view
+  const navLinks=[...document.querySelectorAll("#secnav a")];
+  const spy=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting) navLinks.forEach(a=>a.classList.toggle("on",a.dataset.sec===e.target.id));});},
+    {rootMargin:"-30% 0px -60% 0px"});
+  navLinks.forEach(a=>{const t=document.getElementById(a.dataset.sec); if(t) spy.observe(t);});
+  $("themeSel").addEventListener("change",e=>{S.theme=e.target.value; applyTheme(); save(); render();});
   $("layoutSeg").addEventListener("click",e=>{
     const b=e.target.closest("button"); if(!b) return;
     S.layout=b.dataset.l; S.preset=""; syncInputs(); save(); render();
@@ -770,6 +790,7 @@ window.onView3DReady=()=>{if(window.__started){window.View3D.setSync(S.sync);ren
   wire();
   await Host.ready;
   applyState(await loadSaved());
+  const qt=new URLSearchParams(location.search).get("theme"); if(qt&&qt in THEMES) S.theme=qt; // for previews/screenshots
   syncInputs(); buildPlans(); render();
   window.__started=true;
   if(typeof startProductCheck==="function") startProductCheck(); // productcheck.js loads after app.js

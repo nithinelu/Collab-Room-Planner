@@ -10,7 +10,7 @@ const DISPLAY_BOTTOM = 0.9;
 const BASE_FOV = 45;
 
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#888";
-const dark = () => matchMedia("(prefers-color-scheme: dark)").matches;
+const dark = () => window.themeIsDark ? window.themeIsDark() : matchMedia("(prefers-color-scheme: dark)").matches;
 
 function label(text, {size = 48, color = "#fff", bg = "rgba(0,0,0,.55)", h = 0.16} = {}) {
   const c = document.createElement("canvas"), g = c.getContext("2d");

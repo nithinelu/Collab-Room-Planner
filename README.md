@@ -1,10 +1,12 @@
-# Collab Room Planner
+# MeetSpace 3D
+
+*(formerly Collab Room Planner)*
 
 Desktop app for planning meeting rooms: room size, seats and table, then a Cisco / Logitech / MAXHUB / Huawei
 device (Neat and Huawei IdeaHub ES3 / ES2 / ES2 Plus / S2 / B3 included), with camera coverage, mic pickup and minimum display size per seat, in 2D or 3D. Two devices can be compared side by side.
 
 ## Run
-- Start Menu or Desktop shortcut **Collab Room Planner**, or double-click `Collab Room Planner.bat`.
+- Start Menu or Desktop shortcut **MeetSpace 3D**, or double-click `MeetSpace 3D.bat`.
 - First time on a new PC: run `setup.bat` (installs `pywebview` + `openpyxl` and adds the shortcuts).
 
 ## Features
@@ -52,7 +54,12 @@ device (Neat and Huawei IdeaHub ES3 / ES2 / ES2 Plus / S2 / B3 included), with c
   MAXHUB, Huawei, Shure, Sennheiser, Biamp, QSC) is opened in a hidden browser window and checked: still listed, now
   showing a newer model (e.g. G2 → G3), end-of-sale wording, or page gone. The header badge shows progress and the
   result; click it for the full table with links. Flagged devices get a ⚠ in the device list and a note on the card.
-  Results: `%APPDATA%\Collab Room Planner\catalog_check.json`. Page list: `web/productcheck.js` (`PAGES`).
+  Results: `%APPDATA%\MeetSpace 3D\catalog_check.json`. Page list: `web/productcheck.js` (`PAGES`).
+- **Layout**: sticky section bar (Room · Mounting & cabling · Devices & coverage · Installation & power · BOQ) that
+  highlights where you are; device cards with vendor badges and coverage tiles (progress rings for fully covered,
+  camera, audio, face-on, speakers, plus minimum display size).
+- **Theme picker** (header): Corporate Blue (default), Ocean Night, Warm Sand, Grey-Green, Graphite Dark, or Follow Windows.
+  Saved per PC (not inside project files); the 3D view switches its light/dark finishes with the theme.
 - **Colours**: camera blue, extra cameras purple, mic pickup magenta, speakers cyan, display + 6× viewing zone brown,
   CAT6 grey dotted, HDMI dark dashed. Green / amber / red are kept for seat coverage only.
 - **Room finishes (3D/2D)**: wood-slat acoustic feature wall behind the display, skirting and cornice, carpet floor;
@@ -63,7 +70,7 @@ device (Neat and Huawei IdeaHub ES3 / ES2 / ES2 Plus / S2 / B3 included), with c
 - `planner_app.py`: pywebview window and file dialogs. `boq_export.py`: Excel writer. `catalog_check.py`: startup product check.
 - `web/`: UI (`app.js` = catalog, layout, analysis, 2D, BOQ; `view3d.js` = three.js scene). three.js r160 is bundled
   in `web/vendor`, so no internet is needed.
-- Last session state: `%APPDATA%\Collab Room Planner\state.json`.
+- Last session state: `%APPDATA%\MeetSpace 3D\state.json`.
 
 ## License
 MIT, see [LICENSE](LICENSE). Bundled three.js (web/vendor) is also MIT-licensed.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Collab Room Planner</title>
+<title>MeetSpace 3D</title>
 <link rel="stylesheet" href="styles.css">
 <script type="importmap">
 {"imports":{"three":"./vendor/three.module.js","three/addons/controls/OrbitControls.js":"./vendor/OrbitControls.js"}}
@@ -13,10 +13,15 @@
 <div class="wrap">
   <header class="top">
     <div>
-      <h1>Collab Room Planner</h1>
+      <h1>MeetSpace <span class="h1-3d">3D</span></h1>
       <p>Lay out a meeting room, drop in a Cisco, Logitech, Neat, MAXHUB or Huawei device, and check camera coverage, mic pickup and display size per seat, in plan or in 3D.</p>
     </div>
     <div class="actions">
+      <select class="theme" id="themeSel" aria-label="Colour theme" title="Colour theme">
+        <option value="blue">Theme: Corporate Blue</option><option value="ocean">Theme: Ocean Night</option>
+        <option value="sand">Theme: Warm Sand</option><option value="light">Theme: Grey-Green</option>
+        <option value="dark">Theme: Graphite Dark</option><option value="system">Theme: Follow Windows</option>
+      </select>
       <button class="btn ghost" id="openProj" title="Ctrl+O">Open…</button>
       <button class="btn ghost" id="importVrc" title="Import a Video Room Calculator .vrc.json (Ctrl+I)">Import VRC…</button>
       <button class="btn ghost" id="saveProj" title="Ctrl+S">Save…</button>
@@ -26,13 +31,22 @@
     </div>
   </header>
 
+
+  <nav class="secnav" id="secnav" aria-label="Sections">
+    <a href="#room-sec" data-sec="room-sec"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg>Room</a>
+    <a href="#installCfg" data-sec="installCfg"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 20V9h10v11"/><path d="M12 4v5"/><path d="M9 4h6"/></svg>Mounting &amp; cabling</a>
+    <a href="#plans" data-sec="plans"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/></svg>Devices &amp; coverage</a>
+    <a href="#inst-sec" data-sec="inst-sec"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 7a4 4 0 0 1-5 5L4 17l3 3 5-5a4 4 0 0 1 5-5l-2-2"/><circle cx="17" cy="7" r="1.5"/></svg>Installation &amp; power</a>
+    <a href="#boq-sec" data-sec="boq-sec"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Bill of quantities</a>
+  </nav>
+
   <details class="sheet" id="checkPanel" hidden>
     <summary><h2>Vendor product check</h2></summary>
     <div id="checkBody"></div>
   </details>
 
-  <section class="sheet" aria-labelledby="room-h">
-    <h2 id="room-h">Room</h2>
+  <section class="sheet" id="room-sec" aria-labelledby="room-h">
+    <h2 id="room-h"><svg class="h2ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg>Room</h2>
     <div class="fields">
       <div class="field wide"><label class="label" for="pname">Project / room name</label><input id="pname" type="text" placeholder="e.g. Customer HQ, Level 3 boardroom"></div>
     </div>
@@ -60,7 +74,7 @@
 
 
   <details class="sheet" id="installCfg" open>
-    <summary><h2>Mounting &amp; cabling</h2></summary>
+    <summary><h2><svg class="h2ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M7 20V9h10v11"/><path d="M12 4v5"/><path d="M9 4h6"/></svg>Mounting &amp; cabling</h2></summary>
     <div class="label">Mounting heights and distances</div>
     <div class="fields">
       <div class="field"><label class="label" for="mount-bottom">Display bottom edge AFF (m)</label><input id="mount-bottom" data-grp="mount" data-key="bottom" type="number" min="0.5" max="3" step="0.05"></div>
@@ -90,13 +104,13 @@
 
   <section class="plans" id="plans" aria-label="Room views"></section>
 
-  <section class="sheet" aria-labelledby="inst-h">
-    <h2 id="inst-h">Installation: mounting &amp; cable schedule</h2>
+  <section class="sheet" id="inst-sec" aria-labelledby="inst-h">
+    <h2 id="inst-h"><svg class="h2ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 7a4 4 0 0 1-5 5L4 17l3 3 5-5a4 4 0 0 1 5-5l-2-2"/><circle cx="17" cy="7" r="1.5"/></svg>Installation: mounting, cables &amp; PoE power</h2>
     <div class="boq" id="inst"></div>
   </section>
 
-  <section class="sheet" aria-labelledby="boq-h">
-    <h2 id="boq-h">Bill of quantities</h2>
+  <section class="sheet" id="boq-sec" aria-labelledby="boq-h">
+    <h2 id="boq-h"><svg class="h2ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Bill of quantities</h2>
     <div class="boq" id="boq"></div>
   </section>
 

@@ -82,7 +82,7 @@ function buildVrc(c){
     room:{roomWidth:S.W,roomLength:S.D,roomHeight:S.H},
     name:(S.name||"Room")+(S.compare?` (${c?"B":"A"} · ${d.v} ${d.name})`:""),
     date:new Date().toISOString(),roomId:vrcId(),version:"v0.1.672",unit:"meters",
-    software:"Collab Room Planner",authorVersion:"",items,
+    software:"MeetSpace 3D",authorVersion:"",items,
     workspace:{removeDefaultWalls:false,addCeiling:false,theme:"regular"},
     overlaysVisible:{cameraCoverage:true,displayDistanceCoverage:false,microphoneCoverage:false,gridLines:true,speakerCoverage:false,overlayLabels:false},
     multiRoomFloorPlanMode:false,
